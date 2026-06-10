@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -o /home/dedenbangkit/Repos/personal/mermaid-live-editor/assets/css/tailwind.min.css https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css)",
+      "Bash(curl -L -o /home/dedenbangkit/Repos/personal/mermaid-live-editor/assets/css/tailwind.min.css \"https://cdn.tailwindcss.com/3.4.1\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
