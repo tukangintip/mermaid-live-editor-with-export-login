@@ -6,7 +6,7 @@ A modern, feature-rich live editor for Mermaid diagrams with built-in user authe
 
 > **Note**: This project is a fork of [dedenbangkit/mermaid-live-editor](https://github.com/dedenbangkit/mermaid-live-editor/) with additional features including user authentication, admin panel, and export capabilities.
 
-![Mermaid Live Editor Screenshot](images/mermaid-live-editor.jpg)
+![Mermaid Live Editor Screenshot](images/mermaid-live-editor.png)
 
 ## Features
 
