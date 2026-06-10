@@ -1,4 +1,4 @@
-<![CDATA[## HTML files
+## HTML files
 /*.html
   X-Content-Type-Options: nosniff
   X-Frame-Options: SAMEORIGIN
@@ -23,4 +23,3 @@
 /images/*
   X-Content-Type-Options: nosniff
   Cache-Control: public, max-age=86400
-]]>
