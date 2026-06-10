@@ -1,4 +1,4 @@
-<![CDATA[# Mermaid Live Editor with Authentication
+# Mermaid Live Editor with Authentication
 
 A modern, feature-rich live editor for Mermaid diagrams with built-in user authentication, admin panel, and export capabilities. Create, edit, and preview Mermaid diagrams with syntax highlighting, zoom controls, file management, and multi-user support — all running entirely in your browser with no backend server required!
 
