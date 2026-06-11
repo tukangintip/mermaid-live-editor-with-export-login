@@ -132,11 +132,14 @@ npm install -g wrangler
 wrangler login
 
 # Deploy directly (no build step needed)
+# ⚠️ IMPORTANT: Use "wrangler pages deploy", NOT "wrangler deploy"
 wrangler pages deploy . --project-name=mermaid-live-editor
 
 # Or use the dev command to test locally first
 wrangler pages dev .
 ```
+
+> **⚠️ Common mistake**: Do NOT use `wrangler deploy` — that is for Cloudflare Workers, not Pages. Always use `wrangler pages deploy` for this static site.
 
 ### Option 5: Deploy to Cloudflare Pages (via Dashboard)
 1. Push your code to a GitHub/GitLab repository

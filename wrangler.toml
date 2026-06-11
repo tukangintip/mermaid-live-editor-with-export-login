@@ -4,4 +4,8 @@ compatibility_date = "2024-01-01"
 
 # Cloudflare Pages configuration
 # This is a static site with no build step required
-pages_build_output_dir = "."
+# Deploy with: npx wrangler pages deploy . --project-name=mermaid-live-editor
+
+[assets]
+directory = "."
+exclude = ["CLAUDE.md", "README.md", "LICENSE", ".DS_Store", "wrangler.toml"]
