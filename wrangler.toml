@@ -9,3 +9,4 @@ compatibility_date = "2024-01-01"
 [assets]
 directory = "."
 exclude = ["CLAUDE.md", "README.md", "LICENSE", ".DS_Store", "wrangler.toml"]
+pages_build_output_dir = "."
