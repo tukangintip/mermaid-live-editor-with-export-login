@@ -808,6 +808,90 @@ function showNotification(message, type = 'info') {
   }, 3000);
 }
 
+// ================== Export/Import All Diagrams ==================
+
+async function exportAllDiagrams() {
+  try {
+    const files = await getAllFilesFromIndexedDB();
+    if (files.length === 0) {
+      showNotification('No diagrams to export', 'error');
+      return;
+    }
+
+    const exportData = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      diagrams: files
+    };
+
+    const json = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const link = document.createElement('a');
+    link.download = `mermaid-diagrams-backup-${dateStr}.json`;
+    link.href = url;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    showNotification(`Exported ${files.length} diagram(s)!`, 'success');
+  } catch (err) {
+    console.error('Export all error:', err);
+    showNotification('Error exporting diagrams', 'error');
+  }
+}
+
+async function importDiagrams() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+
+      // Validate format
+      if (!data.diagrams || !Array.isArray(data.diagrams)) {
+        showNotification('Invalid backup file format', 'error');
+        return;
+      }
+
+      // Confirm import
+      const existingFiles = await getAllFilesFromIndexedDB();
+      const msg = existingFiles.length > 0
+        ? `Import ${data.diagrams.length} diagram(s)?\n\nYou currently have ${existingFiles.length} diagram(s). Imported diagrams with the same ID will overwrite existing ones.`
+        : `Import ${data.diagrams.length} diagram(s)?`;
+
+      if (!confirm(msg)) return;
+
+      let imported = 0;
+      for (const diagram of data.diagrams) {
+        // Validate diagram has required fields
+        if (diagram.id && diagram.name && diagram.content) {
+          await saveToIndexedDB(diagram);
+          imported++;
+        }
+      }
+
+      // Refresh file list
+      await loadFiles();
+      showNotification(`Imported ${imported} diagram(s)!`, 'success');
+    } catch (err) {
+      console.error('Import error:', err);
+      showNotification('Error importing diagrams. Make sure it\'s a valid backup file.', 'error');
+    }
+  };
+
+  input.click();
+}
+
 // ================== Keyboard Shortcuts ==================
 
 function initKeyboardShortcuts() {
