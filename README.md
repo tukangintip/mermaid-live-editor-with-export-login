@@ -2,9 +2,9 @@
 
 A modern, feature-rich live editor for Mermaid diagrams with built-in user authentication, admin panel, and export capabilities. Create, edit, and preview Mermaid diagrams with syntax highlighting, zoom controls, file management, and multi-user support — all running entirely in your browser with no backend server required!
 
-**[🚀 Live Demo](https://dedenbangkit.github.io/mermaid-live-editor/)**
+**[🚀 Live Demo](https://chart.rencanacerdas.com/)**
 
-> **Note**: This project is a fork of [dedenbangkit/mermaid-live-editor](https://github.com/dedenbangkit/mermaid-live-editor/) with additional features including user authentication, admin panel, and export capabilities.
+> **Note**: This project is based on [dedenbangkit/mermaid-live-editor](https://github.com/dedenbangkit/mermaid-live-editor/) with additional features including user authentication, admin panel, and export capabilities.
 
 ![Mermaid Live Editor Screenshot](images/mermaid-live-editor.png)
 
@@ -56,6 +56,7 @@ A modern, feature-rich live editor for Mermaid diagrams with built-in user authe
 - Delete files with confirmation
 - Auto-save on rename or edit
 - Persistent storage using IndexedDB (browser storage)
+- Export/Import backup for cross-browser data transfer
 
 ### 👨‍💼 **Admin Panel**
 - Dashboard with user statistics (total users, admins, regular users)
@@ -72,6 +73,8 @@ A modern, feature-rich live editor for Mermaid diagrams with built-in user authe
 - No server setup or installation needed
 - Works offline after first load
 - Can be hosted on any static file server
+
+> ⚠️ **Browser-only storage**: Diagrams are saved in your current browser's IndexedDB. They do NOT sync across browsers. Use the **Export All** button to create backups and **Import** to restore on another browser.
 
 ### 📚 **Interactive Cheatsheet**
 - Comprehensive examples of all Mermaid diagram types
@@ -104,14 +107,11 @@ Simply open `login.html` in your web browser. You will be redirected to the logi
 ### Option 2: Run with Python HTTP Server
 ```bash
 # Clone the repository
-git clone https://github.com/dedenbangkit/mermaid-live-editor.git
-cd mermaid-live-editor
+git clone https://github.com/tukangintip/mermaid-live-editor-with-export-login.git
+cd mermaid-live-editor-with-export-login
 
 # Start a simple HTTP server (Python 3)
 python -m http.server 8000
-
-# Or with Python 2
-python -m SimpleHTTPServer 8000
 ```
 
 Then open your browser and navigate to: `http://localhost:8000`
@@ -186,6 +186,11 @@ This application can be deployed to any static hosting service:
 ### Exporting Diagrams
 - Click the **Export PNG** button in the preview header to download your diagram as a high-resolution PNG image
 - If PNG export fails (e.g., on `file://` protocol), the diagram will be exported as SVG instead
+
+### Backup & Transfer Diagrams
+- Click **Export All** in the sidebar to download all diagrams as a JSON backup file
+- Click **Import** to restore diagrams from a backup file (e.g., on a different browser or device)
+- Diagrams are stored in the browser's IndexedDB and do **not** sync between browsers
 
 ### Admin Panel (Admin Users Only)
 1. Click the **Admin** button in the header (visible only for admin users)
@@ -271,11 +276,11 @@ graph TD
 - Local users can be added/deleted via Admin panel
 
 ### Storage
-- **Diagrams**: Stored locally in your browser using IndexedDB
+- **Diagrams**: Stored locally in your browser using IndexedDB — **not shared between browsers**
 - **Custom Users**: Stored in localStorage (managed via Admin panel)
 - **Session Data**: Stored in sessionStorage (cleared on tab close)
 - Data persists across browser sessions (except session data)
-- Each browser/device has its own independent storage
+- Each browser/device has its own independent storage — use **Export/Import** to transfer
 - No server communication required
 - Automatic tracking of creation and modification times
 
@@ -324,8 +329,11 @@ mermaid-live-editor/
 │       ├── apple-touch-icon.png
 │       ├── android-chrome-192x192.png
 │       └── android-chrome-512x512.png
+├── .gitignore               # Git ignore rules
+├── .nojekyll                # GitHub Pages config
+├── package.json             # Node.js dependencies (Wrangler)
 ├── images/
-│   └── mermaid-live-editor.jpg
+│   └── mermaid-live-editor.png
 ├── CLAUDE.md               # Claude Code guidance
 ├── LICENSE                 # MIT License
 └── README.md
