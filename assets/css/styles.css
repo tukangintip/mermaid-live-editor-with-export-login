@@ -35,28 +35,23 @@
   background: #c7d2fe !important;
 }
 
-/* Word Wrap Toggle Button */
-.word-wrap-btn {
-  background: #f1f5f9;            /* slate-100 */
-  color: #475569;                 /* slate-600 */
-  border: 1px solid #e2e8f0;      /* slate-200 */
+/* Word Wrap Checkbox */
+.word-wrap-checkbox-label {
+  padding: 0.125rem 0.375rem;     /* px-1.5 py-0.5 */
+  border-radius: 0.5rem;          /* rounded-lg */
+  border: 1px solid transparent;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
-.word-wrap-btn:hover {
+.word-wrap-checkbox-label:hover {
   background: #e2e8f0;            /* slate-200 */
-  color: #1e293b;                 /* slate-800 */
+  border-color: #cbd5e1;          /* slate-300 */
 }
 
-/* Active state: word wrap is ON */
-.word-wrap-btn.word-wrap-active {
-  background: #e0e7ff;            /* indigo-100 */
-  color: #4338ca;                 /* indigo-700 */
-  border-color: #c7d2fe;          /* indigo-200 */
-}
-
-.word-wrap-btn.word-wrap-active:hover {
-  background: #c7d2fe;            /* indigo-200 */
-  color: #3730a3;                 /* indigo-800 */
+/* Make the checkbox accent match the app theme (indigo) */
+.word-wrap-checkbox {
+  accent-color: #4f46e5;          /* indigo-600 */
+  vertical-align: middle;
 }
 
 /* Resizer Styling */

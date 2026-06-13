@@ -239,18 +239,22 @@
             </div>
             <div class="flex items-center gap-2">
               <span class="text-xs text-slate-500 hidden sm:inline">Mermaid syntax</span>
-              <button
-                onclick="toggleWordWrap()"
-                id="word-wrap-btn"
-                aria-pressed="true"
-                class="word-wrap-btn word-wrap-active flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all duration-200"
-                title="Word wrap: ON (click to turn off)"
+              <label
+                for="word-wrap-checkbox"
+                id="word-wrap-label"
+                class="word-wrap-checkbox-label flex items-center gap-1.5 cursor-pointer select-none transition-all duration-200"
+                title="Toggle word wrap"
               >
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h10M4 18h7"></path>
-                </svg>
-                <span class="hidden sm:inline">Wrap</span>
-              </button>
+                <input
+                  type="checkbox"
+                  id="word-wrap-checkbox"
+                  checked
+                  onchange="toggleWordWrap()"
+                  class="word-wrap-checkbox w-3.5 h-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                  aria-checked="true"
+                />
+                <span class="text-xs font-medium text-slate-600 hidden sm:inline">Wrap lines</span>
+              </label>
               <button
                 onclick="toggleEditor()"
                 id="toggle-editor-btn"
@@ -356,6 +360,6 @@
       </div>
     </div>
 
-    <script src="assets/js/app.js?v=4"></script>
+    <script src="assets/js/app.js?v=5"></script>
   </body>
 </html>

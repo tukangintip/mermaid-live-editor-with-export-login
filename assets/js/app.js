@@ -475,29 +475,29 @@ function toggleEditor() {
 
 function toggleWordWrap() {
   if (!editor) return;
-  const isWrapped = editor.getOption('lineWrapping');
-  const next = !isWrapped;
+  // The checkbox is the source of truth (its 'change' event triggers this)
+  const checkbox = document.getElementById('word-wrap-checkbox');
+  const next = checkbox ? checkbox.checked : editor.getOption('lineWrapping');
 
   editor.setOption('lineWrapping', next);
   localStorage.setItem('mermaid_word_wrap', next ? 'true' : 'false');
-  updateWordWrapButton(next);
+  updateWordWrapUI(next);
   // Refresh so layout/measuring updates immediately
   editor.refresh();
   showNotification(next ? 'Word wrap enabled' : 'Word wrap disabled', 'info');
 }
 
-function updateWordWrapButton(enabled) {
-  const btn = document.getElementById('word-wrap-btn');
-  if (!btn) return;
-
-  if (enabled) {
-    btn.classList.add('word-wrap-active');
-    btn.setAttribute('aria-pressed', 'true');
-    btn.setAttribute('title', 'Word wrap: ON (click to turn off)');
-  } else {
-    btn.classList.remove('word-wrap-active');
-    btn.setAttribute('aria-pressed', 'false');
-    btn.setAttribute('title', 'Word wrap: OFF (click to turn on)');
+function updateWordWrapUI(enabled) {
+  const checkbox = document.getElementById('word-wrap-checkbox');
+  const label = document.getElementById('word-wrap-label');
+  if (checkbox) {
+    checkbox.checked = !!enabled;
+    checkbox.setAttribute('aria-checked', enabled ? 'true' : 'false');
+  }
+  if (label) {
+    label.setAttribute('title', enabled
+      ? 'Word wrap: ON (click to turn off)'
+      : 'Word wrap: OFF (click to turn on)');
   }
 }
 
@@ -1004,8 +1004,8 @@ document.addEventListener("DOMContentLoaded", async function () {
 
   editor.on("change", updatePreview);
 
-  // Sync the word-wrap toggle button to the current state
-  updateWordWrapButton(wordWrapEnabled);
+  // Sync the word-wrap checkbox to the saved state
+  updateWordWrapUI(wordWrapEnabled);
 
   // Initialize other features
   initResizer();
