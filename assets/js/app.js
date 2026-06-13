@@ -275,6 +275,14 @@ async function saveFile() {
     updateSaveButton();
     loadFiles();
     showNotification(isUpdate ? 'Diagram updated!' : 'Diagram saved!', 'success');
+
+    // One-time first-save notice about browser storage
+    if (!localStorage.getItem('mermaid_first_save_shown')) {
+      localStorage.setItem('mermaid_first_save_shown', 'true');
+      setTimeout(() => {
+        showNotification('💾 Tip: Diagrams are saved in this browser only. Use "Export All" to backup!', 'info');
+      }, 1500);
+    }
   } catch (err) {
     console.error("Error saving file:", err);
     showNotification('Error saving diagram', 'error');
