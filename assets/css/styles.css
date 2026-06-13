@@ -35,6 +35,30 @@
   background: #c7d2fe !important;
 }
 
+/* Word Wrap Toggle Button */
+.word-wrap-btn {
+  background: #f1f5f9;            /* slate-100 */
+  color: #475569;                 /* slate-600 */
+  border: 1px solid #e2e8f0;      /* slate-200 */
+}
+
+.word-wrap-btn:hover {
+  background: #e2e8f0;            /* slate-200 */
+  color: #1e293b;                 /* slate-800 */
+}
+
+/* Active state: word wrap is ON */
+.word-wrap-btn.word-wrap-active {
+  background: #e0e7ff;            /* indigo-100 */
+  color: #4338ca;                 /* indigo-700 */
+  border-color: #c7d2fe;          /* indigo-200 */
+}
+
+.word-wrap-btn.word-wrap-active:hover {
+  background: #c7d2fe;            /* indigo-200 */
+  color: #3730a3;                 /* indigo-800 */
+}
+
 /* Resizer Styling */
 .resizer {
   width: 4px;

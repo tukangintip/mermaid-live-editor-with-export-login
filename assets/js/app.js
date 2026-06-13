@@ -471,6 +471,36 @@ function toggleEditor() {
   }
 }
 
+// ================== Word Wrap Function ==================
+
+function toggleWordWrap() {
+  if (!editor) return;
+  const isWrapped = editor.getOption('lineWrapping');
+  const next = !isWrapped;
+
+  editor.setOption('lineWrapping', next);
+  localStorage.setItem('mermaid_word_wrap', next ? 'true' : 'false');
+  updateWordWrapButton(next);
+  // Refresh so layout/measuring updates immediately
+  editor.refresh();
+  showNotification(next ? 'Word wrap enabled' : 'Word wrap disabled', 'info');
+}
+
+function updateWordWrapButton(enabled) {
+  const btn = document.getElementById('word-wrap-btn');
+  if (!btn) return;
+
+  if (enabled) {
+    btn.classList.add('word-wrap-active');
+    btn.setAttribute('aria-pressed', 'true');
+    btn.setAttribute('title', 'Word wrap: ON (click to turn off)');
+  } else {
+    btn.classList.remove('word-wrap-active');
+    btn.setAttribute('aria-pressed', 'false');
+    btn.setAttribute('title', 'Word wrap: OFF (click to turn on)');
+  }
+}
+
 // ================== Export to PNG Function ==================
 
 function exportToPNG() {
@@ -956,11 +986,14 @@ document.addEventListener("DOMContentLoaded", async function () {
   setupAuthUI();
 
   // Initialize CodeMirror
+  // Read word-wrap preference (default: on)
+  const wordWrapEnabled = localStorage.getItem('mermaid_word_wrap') !== 'false';
+
   editor = CodeMirror.fromTextArea(textArea, {
     mode: "yaml",
     theme: "default",
     lineNumbers: true,
-    lineWrapping: false,
+    lineWrapping: wordWrapEnabled,
     indentWithTabs: false,
     indentUnit: 2,
     tabSize: 2,
@@ -970,6 +1003,9 @@ document.addEventListener("DOMContentLoaded", async function () {
   });
 
   editor.on("change", updatePreview);
+
+  // Sync the word-wrap toggle button to the current state
+  updateWordWrapButton(wordWrapEnabled);
 
   // Initialize other features
   initResizer();

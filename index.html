@@ -238,7 +238,19 @@
               <span class="text-sm font-semibold text-slate-700">Editor</span>
             </div>
             <div class="flex items-center gap-2">
-              <span class="text-xs text-slate-500">Mermaid syntax</span>
+              <span class="text-xs text-slate-500 hidden sm:inline">Mermaid syntax</span>
+              <button
+                onclick="toggleWordWrap()"
+                id="word-wrap-btn"
+                aria-pressed="true"
+                class="word-wrap-btn word-wrap-active flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all duration-200"
+                title="Word wrap: ON (click to turn off)"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h10M4 18h7"></path>
+                </svg>
+                <span class="hidden sm:inline">Wrap</span>
+              </button>
               <button
                 onclick="toggleEditor()"
                 id="toggle-editor-btn"
@@ -344,6 +356,6 @@
       </div>
     </div>
 
-    <script src="assets/js/app.js?v=3"></script>
+    <script src="assets/js/app.js?v=4"></script>
   </body>
 </html>
