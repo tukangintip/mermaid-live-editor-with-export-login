@@ -1,5 +1,9 @@
 {
-  "dependencies": {
+  "name": "mermaid-live-editor",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mermaid Live Editor with authentication and export capabilities",
+  "devDependencies": {
     "wrangler": "^4.99.0"
   }
 }

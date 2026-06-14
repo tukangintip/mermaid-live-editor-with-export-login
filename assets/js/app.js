@@ -12,6 +12,22 @@ mermaid.initialize({
   securityLevel: 'loose'
 });
 
+// Utility: Escape HTML to prevent XSS
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// Utility: Debounce function
+function debounce(fn, delay) {
+  let timer;
+  return function (...args) {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn.apply(this, args), delay);
+  };
+}
+
 // Application State
 let currentFileId = null;
 let currentZoom = 1;
@@ -19,6 +35,9 @@ let isPanning = false;
 let panStart = { x: 0, y: 0 };
 let isResizing = false;
 let editor = null;
+let isDirty = false;
+let autoSaveTimer = null;
+let debounceTimer = null;
 
 // DOM Elements
 const textArea = document.getElementById("mermaid-code");
@@ -64,6 +83,7 @@ async function initDB() {
 }
 
 async function saveToIndexedDB(fileData) {
+  if (!db) throw new Error('Database not initialized');
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([STORE_NAME], 'readwrite');
     const objectStore = transaction.objectStore(STORE_NAME);
@@ -82,6 +102,7 @@ async function saveToIndexedDB(fileData) {
 }
 
 async function loadFromIndexedDB(fileId) {
+  if (!db) throw new Error('Database not initialized');
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([STORE_NAME], 'readonly');
     const objectStore = transaction.objectStore(STORE_NAME);
@@ -93,6 +114,7 @@ async function loadFromIndexedDB(fileId) {
 }
 
 async function getAllFilesFromIndexedDB() {
+  if (!db) throw new Error('Database not initialized');
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([STORE_NAME], 'readonly');
     const objectStore = transaction.objectStore(STORE_NAME);
@@ -104,6 +126,7 @@ async function getAllFilesFromIndexedDB() {
 }
 
 async function deleteFromIndexedDB(fileId) {
+  if (!db) throw new Error('Database not initialized');
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([STORE_NAME], 'readwrite');
     const objectStore = transaction.objectStore(STORE_NAME);
@@ -188,11 +211,15 @@ async function loadFiles() {
         minute: '2-digit'
       });
 
+      const safeName = escapeHtml(file.name);
+      const safeId = escapeHtml(file.id);
+      const safeFullDate = escapeHtml(fullDate);
+
       fileItem.innerHTML = `
         <div class="flex items-center justify-between gap-2">
-          <div class="flex-1 min-w-0 cursor-pointer" onclick="loadFile('${file.id}')">
-            <div class="font-medium text-sm text-slate-900 truncate ${isActive ? 'text-indigo-700' : ''}">${file.name}</div>
-            <div class="text-xs text-slate-500 mt-0.5" title="${fullDate}">${timeAgo}</div>
+          <div class="flex-1 min-w-0 cursor-pointer" onclick="loadFile('${safeId}')">
+            <div class="font-medium text-sm text-slate-900 truncate ${isActive ? 'text-indigo-700' : ''}">${safeName}</div>
+            <div class="text-xs text-slate-500 mt-0.5" title="${safeFullDate}">${timeAgo}</div>
           </div>
           <div class="flex items-center gap-1 flex-shrink-0">
             ${isActive ? `
@@ -201,7 +228,7 @@ async function loadFiles() {
               </svg>
             ` : ''}
             <button
-              onclick="event.stopPropagation(); deleteFile('${file.id}', '${file.name.replace(/'/g, "\\'")}')"
+              onclick="event.stopPropagation(); deleteFile('${safeId}', '${safeName.replace(/'/g, "\\'")}')"
               class="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-100 transition-all duration-200"
               title="Delete diagram"
             >
@@ -227,6 +254,7 @@ async function loadFile(fileId) {
 
     if (file) {
       currentFileId = fileId;
+      isDirty = false;
       fileName.value = file.name;
       updateDiagramTitle();
       editor.setValue(file.content);
@@ -249,20 +277,19 @@ async function saveFile() {
   const diagramName = fileName.value || 'Untitled Diagram';
   const isUpdate = !!currentFileId;
 
+  // Single DB read for existing file
+  const existingFile = currentFileId ? await loadFromIndexedDB(currentFileId) : null;
+
   // Check if updating existing file with name change
-  if (currentFileId) {
-    const existingFile = await loadFromIndexedDB(currentFileId);
-    if (existingFile && existingFile.name !== diagramName) {
-      const confirmed = confirm(`Update diagram "${existingFile.name}" to "${diagramName}"?`);
-      if (!confirmed) return;
-    }
+  if (existingFile && existingFile.name !== diagramName) {
+    const confirmed = confirm(`Update diagram "${existingFile.name}" to "${diagramName}"?`);
+    if (!confirmed) return;
   }
 
-  const existingFile = currentFileId ? await loadFromIndexedDB(currentFileId) : null;
   const now = new Date().toISOString();
 
   const fileData = {
-    id: currentFileId || `file_${Date.now()}`,
+    id: currentFileId || `file_${crypto.randomUUID()}`,
     name: diagramName,
     content: editor.getValue(),
     created: existingFile?.created || now,
@@ -272,6 +299,7 @@ async function saveFile() {
   try {
     const savedId = await saveToIndexedDB(fileData);
     currentFileId = savedId;
+    isDirty = false;
     updateSaveButton();
     loadFiles();
     showNotification(isUpdate ? 'Diagram updated!' : 'Diagram saved!', 'success');
@@ -297,7 +325,7 @@ async function saveAsNew() {
   const now = new Date().toISOString();
 
   const fileData = {
-    id: `file_${Date.now()}`,
+    id: `file_${crypto.randomUUID()}`,
     name: newName,
     content: editor.getValue(),
     created: now,
@@ -345,17 +373,13 @@ async function deleteFile(fileId, fileName) {
   }
 }
 
-async function deleteCurrentFile() {
-  if (!currentFileId) return;
-
-  const file = await loadFromIndexedDB(currentFileId);
-  if (file) {
-    await deleteFile(currentFileId, file.name);
-  }
-}
-
 function newFile() {
+  if (isDirty && !confirm('You have unsaved changes. Discard them?')) {
+    return;
+  }
+
   currentFileId = null;
+  isDirty = false;
   fileName.value = "Untitled Diagram";
   updateDiagramTitle();
   editor.setValue(`graph TD
@@ -417,7 +441,7 @@ function updatePreview() {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
               <h3 class="text-lg font-semibold text-red-900 mb-2">Syntax Error</h3>
-              <p class="text-sm text-red-700 font-mono">${err.message}</p>
+              <p class="text-sm text-red-700 font-mono">${escapeHtml(err.message)}</p>
               <a href="cheatsheet.html" class="inline-block mt-4 text-sm text-indigo-600 hover:text-indigo-700 font-medium">
                 View Examples →
               </a>
@@ -581,7 +605,7 @@ function exportToPNG() {
 
     img.onload = function () {
       try {
-        const scale = 2; // High DPI
+        const scale = 2;
         const canvas = document.createElement('canvas');
         canvas.width = width * scale;
         canvas.height = height * scale;
@@ -592,23 +616,10 @@ function exportToPNG() {
         ctx.scale(scale, scale);
         ctx.drawImage(img, 0, 0, width, height);
 
-        // Try to export as PNG
-        const pngDataUrl = canvas.toDataURL('image/png');
-
-        // Download
-        const diagramName = fileName.value || 'diagram';
-        const safeName = diagramName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-        const link = document.createElement('a');
-        link.download = `${safeName}.png`;
-        link.href = pngDataUrl;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
+        downloadCanvasAsPNG(canvas);
         URL.revokeObjectURL(blobUrl);
         showNotification('Diagram exported as PNG!', 'success');
       } catch (canvasErr) {
-        // Canvas toDataURL failed (e.g., tainted canvas on file://)
         console.warn('Canvas export failed, trying SVG fallback:', canvasErr);
         URL.revokeObjectURL(blobUrl);
         downloadAsSVG(svgString);
@@ -635,14 +646,7 @@ function exportToPNG() {
             ctx.scale(scale, scale);
             ctx.drawImage(img2, 0, 0, width, height);
 
-            const diagramName = fileName.value || 'diagram';
-            const safeName = diagramName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-            const link = document.createElement('a');
-            link.download = `${safeName}.png`;
-            link.href = canvas.toDataURL('image/png');
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            downloadCanvasAsPNG(canvas);
             showNotification('Diagram exported as PNG!', 'success');
           } catch(e2) {
             downloadAsSVG(svgString);
@@ -660,19 +664,31 @@ function exportToPNG() {
     img.src = blobUrl;
   } catch (err) {
     console.error('Export error:', err);
-    showNotification('Error exporting PNG: ' + err.message, 'error');
+    showNotification('Error exporting PNG: ' + escapeHtml(err.message), 'error');
   }
 }
 
-// ================== SVG Download Helper ==================
+// ================== Export Helpers ==================
+
+function getSafeFileName() {
+  const diagramName = fileName.value || 'diagram';
+  return diagramName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+}
+
+function downloadCanvasAsPNG(canvas) {
+  const link = document.createElement('a');
+  link.download = `${getSafeFileName()}.png`;
+  link.href = canvas.toDataURL('image/png');
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
 
 function downloadAsSVG(svgString) {
   try {
-    const diagramName = fileName.value || 'diagram';
-    const safeName = diagramName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
     const blob = new Blob([svgString], { type: 'image/svg+xml' });
     const link = document.createElement('a');
-    link.download = `${safeName}.svg`;
+    link.download = `${getSafeFileName()}.svg`;
     link.href = URL.createObjectURL(blob);
     document.body.appendChild(link);
     link.click();
@@ -713,31 +729,46 @@ function updateTransform() {
 function initResizer() {
   if (!resizer) return;
 
+  function handleResize(clientX) {
+    const containerRect = editorSection.parentElement.getBoundingClientRect();
+    const newWidth = ((clientX - containerRect.left) / containerRect.width) * 100;
+
+    if (newWidth >= 20 && newWidth <= 80) {
+      editorSection.style.flex = `1 1 ${newWidth}%`;
+      previewSection.style.flex = `1 1 ${100 - newWidth}%`;
+    }
+  }
+
+  function stopResize() {
+    isResizing = false;
+    document.body.style.cursor = "";
+    document.body.style.userSelect = "";
+  }
+
   resizer.addEventListener("mousedown", (e) => {
     isResizing = true;
     document.body.style.cursor = "col-resize";
     document.body.style.userSelect = "none";
   });
 
+  resizer.addEventListener("touchstart", (e) => {
+    isResizing = true;
+    document.body.style.userSelect = "none";
+  }, { passive: true });
+
   document.addEventListener("mousemove", (e) => {
     if (!isResizing) return;
-
-    const containerRect = editorSection.parentElement.getBoundingClientRect();
-    const newWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
-
-    if (newWidth >= 20 && newWidth <= 80) {
-      editorSection.style.flex = `1 1 ${newWidth}%`;
-      previewSection.style.flex = `1 1 ${100 - newWidth}%`;
-    }
+    handleResize(e.clientX);
   });
 
-  document.addEventListener("mouseup", () => {
-    if (isResizing) {
-      isResizing = false;
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-    }
-  });
+  document.addEventListener("touchmove", (e) => {
+    if (!isResizing) return;
+    e.preventDefault();
+    handleResize(e.touches[0].clientX);
+  }, { passive: false });
+
+  document.addEventListener("mouseup", stopResize);
+  document.addEventListener("touchend", stopResize);
 }
 
 // ================== Panning Functions ==================
@@ -820,11 +851,21 @@ function updateDiagramTitle() {
 
 // ================== Notification System ==================
 
+const activeNotifications = [];
+
 function showNotification(message, type = 'info') {
+  // Remove oldest if too many
+  while (activeNotifications.length >= 3) {
+    const oldest = activeNotifications.shift();
+    oldest.remove();
+  }
+
   const notification = document.createElement('div');
   const bgColor = type === 'success' ? 'bg-emerald-500' : type === 'error' ? 'bg-red-500' : 'bg-indigo-500';
+  const offset = activeNotifications.length * 60;
 
-  notification.className = `fixed bottom-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-slide-in-right flex items-center gap-3`;
+  notification.className = `fixed right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-slide-in-right flex items-center gap-3`;
+  notification.style.bottom = `${16 + offset}px`;
 
   const icon = type === 'success'
     ? '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>'
@@ -834,15 +875,20 @@ function showNotification(message, type = 'info') {
 
   notification.innerHTML = `
     ${icon}
-    <span class="font-medium">${message}</span>
+    <span class="font-medium">${escapeHtml(message)}</span>
   `;
 
   document.body.appendChild(notification);
+  activeNotifications.push(notification);
 
   setTimeout(() => {
     notification.style.opacity = '0';
     notification.style.transform = 'translateX(100%)';
-    setTimeout(() => notification.remove(), 300);
+    setTimeout(() => {
+      const idx = activeNotifications.indexOf(notification);
+      if (idx > -1) activeNotifications.splice(idx, 1);
+      notification.remove();
+    }, 300);
   }, 3000);
 }
 
@@ -979,6 +1025,24 @@ function setupAuthUI() {
   }
 }
 
+// ================== Debounced Preview & Auto-Save ==================
+
+const debouncedUpdatePreview = debounce(() => updatePreview(), 300);
+
+function autoSave() {
+  if (!currentFileId || !isDirty) return;
+  saveFile();
+}
+
+const debouncedAutoSave = debounce(() => autoSave(), 5000);
+
+window.addEventListener('beforeunload', (e) => {
+  if (isDirty) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
 // ================== Initialization ==================
 
 document.addEventListener("DOMContentLoaded", async function () {
@@ -1002,7 +1066,11 @@ document.addEventListener("DOMContentLoaded", async function () {
     scrollbarStyle: "native"
   });
 
-  editor.on("change", updatePreview);
+  editor.on("change", () => {
+    isDirty = true;
+    debouncedUpdatePreview();
+    debouncedAutoSave();
+  });
 
   // Sync the word-wrap checkbox to the saved state
   updateWordWrapUI(wordWrapEnabled);

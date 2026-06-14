@@ -67,7 +67,7 @@ async function login(username, password) {
     return { success: true, user: { username: user.username, role: user.role } };
   }
 
-  return { success: false, error: 'Username atau password salah!' };
+  return { success: false, error: 'Invalid username or password!' };
 }
 
 // Logout function
